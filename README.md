@@ -66,7 +66,7 @@ and **Update Forecast.bat** to pull a fresh Earth2Studio forecast.
 | Forecast grids | GitHub Actions runs the Earth2Studio GFS worker every 6 h (`.github/workflows/forecast.yml`) and publishes `gfs_latest.nc` to the `forecast` release; the API downloads it | 4× a day |
 
 The experimental FourCastNet AI layer needs a GPU and stays on the local (WSL) setup.
-If the API address changes, set the repository variable `BWI_API_BASE` (e.g. `https://<project>.vercel.app/api/v1`).
+API: https://bharat-weather-intelligence-brown.vercel.app/api/v1 (docs at /docs). If it changes, set the repository variable `BWI_API_BASE` (e.g. `https://<project>.vercel.app/api/v1`).
 
 ## Run it (Windows 11 + WSL2)
 

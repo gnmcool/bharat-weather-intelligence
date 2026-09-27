@@ -31,7 +31,7 @@ jobs:
       - name: Build
         working-directory: frontend
         env:
-          VITE_API_BASE: ${{ vars.BWI_API_BASE || 'https://bharat-weather-intelligence.vercel.app/api/v1' }}
+          VITE_API_BASE: ${{ vars.BWI_API_BASE || 'https://bharat-weather-intelligence-brown.vercel.app/api/v1' }}
         run: |
           npm ci
           npx vite build --base=/${{ github.event.repository.name }}/
