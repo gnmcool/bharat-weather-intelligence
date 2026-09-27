@@ -122,3 +122,12 @@ select.bwi-select {
   height: 12px;
   border-width: 2px;
 }
+
+/* Phone layout: keep MapLibre's credits clear of the bottom dock; the scale bar is hidden */
+@media (max-width: 899px) {
+  .maplibregl-ctrl-bottom-left .maplibregl-ctrl-scale { display: none; }
+  .maplibregl-ctrl-bottom-right { bottom: calc(60px + env(safe-area-inset-bottom)); }
+}
+@media (max-width: 899px) {
+  .maplibregl-ctrl-bottom-right .maplibregl-ctrl-group { display: none; } /* pinch to zoom */
+}

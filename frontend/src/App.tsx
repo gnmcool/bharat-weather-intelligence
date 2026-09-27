@@ -1,8 +1,8 @@
-import { ChevronDown, ChevronLeft, ChevronRight, ChevronUp, Layers, ShieldAlert } from "lucide-react";
+import { ChevronDown, ChevronLeft, ChevronRight, ChevronUp, Layers, Menu, ShieldAlert, X } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import AlertsPanel from "./components/AlertsPanel";
 import PointCard from "./components/PointCard";
-import TopBar from "./components/TopBar";
+import TopBar, { LanguageSelect, MODES } from "./components/TopBar";
 import { api, type GridMeta, type OfficialWarning } from "./lib/api";
 import { SEVERITY_COLOR } from "./lib/format";
 import { useT } from "./lib/i18n";
@@ -25,7 +25,7 @@ function useMedia(q: string) {
 }
 
 export default function App() {
-  const { mode, setPlace, govState, focusDistrict, setGov, gridSource, setGridSource, alertsOpen, setAlertsOpen } = useApp();
+  const { mode, setMode, setPlace, govState, focusDistrict, setGov, gridSource, setGridSource, alertsOpen, setAlertsOpen } = useApp();
   const t = useT();
   const [fly, setFly] = useState<{ lng: number; lat: number; key: number } | null>(null);
   const [meta, setMeta] = useState<GridMeta>();
@@ -35,6 +35,8 @@ export default function App() {
   const [alerts, setAlerts] = useState<OfficialWarning[]>([]);
   const showAlerts = alertsOpen;
   const desktop = useMedia("(min-width: 900px)");
+  // mobile: slide-up sheets (☰ menu with modes + panel, and layers)
+  const [sheet, setSheet] = useState<"menu" | "layers" | null>(() => (mode !== "map" ? "menu" : null));
   const gov = useGovChoropleth();
 
   useEffect(() => {
@@ -72,7 +74,7 @@ export default function App() {
   const panelOpen = mode !== "map";
   const leftEdge = desktop && panelOpen && !collapsed ? 468 : 12;
   const padding = useMemo(
-    () => ({ left: desktop && panelOpen && !collapsed ? 470 : 10, right: desktop && !rightHidden ? 90 : 10, top: 80, bottom: desktop ? 90 : 10 }),
+    () => ({ left: desktop && panelOpen && !collapsed ? 470 : 10, right: desktop && !rightHidden ? 90 : 10, top: desktop ? 80 : 70, bottom: desktop ? 90 : 70 }),
     [desktop, panelOpen, collapsed, rightHidden],
   );
 
@@ -87,11 +89,16 @@ export default function App() {
           if (mode === "farmer") setPlace({ name: `${lat.toFixed(3)}, ${lng.toFixed(3)}`, lat: +lat.toFixed(4), lon: +lng.toFixed(4) });
           else setClick({ lng, lat });
         }}
-        onDistrictClick={(id, slug) => setGov({ govState: slug, focusDistrict: id })}
+        onDistrictClick={(id, slug) => { setGov({ govState: slug, focusDistrict: id }); if (!desktop) setSheet("menu"); }}
         alertDistricts={alertDistricts}
         flyTo={fly}
         padding={padding}
       />
+      {!desktop ? (
+        <MobileChrome meta={meta} alerts={alerts} click={click} setClick={setClick} sheet={sheet} setSheet={setSheet}
+          gov={gov} onFly={(lng, lat) => setFly({ lng, lat, key: Date.now() })} mode={mode} setMode={setMode}
+          alertsOpen={alertsOpen} setAlertsOpen={setAlertsOpen} />
+      ) : (
       <div className="pointer-events-none absolute inset-0 z-20">
         <TopBar />
 
@@ -180,6 +187,118 @@ export default function App() {
           <div className="glass pointer-events-auto absolute left-3 top-[124px] max-w-sm rounded-xl p-2.5 text-[11.5px] text-amber-200">{meta.notices[0]}</div>
         ) : null}
       </div>
+      )}
+    </div>
+  );
+}
+
+type Gov = ReturnType<typeof useGovChoropleth>;
+
+/** Phone / small-tablet layout, modelled on Windy: full-screen map, search on top, a bottom dock
+ *  with ☰ + timeline, floating Layers / Alerts buttons, and slide-up sheets. */
+function MobileChrome({ meta, alerts, click, setClick, sheet, setSheet, gov, onFly, mode, setMode, alertsOpen, setAlertsOpen }: {
+  meta?: GridMeta; alerts: OfficialWarning[]; click: { lng: number; lat: number } | null; setClick: (c: null) => void;
+  sheet: "menu" | "layers" | null; setSheet: (s: "menu" | "layers" | null) => void; gov: Gov; onFly: (lng: number, lat: number) => void;
+  mode: ReturnType<typeof useApp.getState>["mode"]; setMode: (m: ReturnType<typeof useApp.getState>["mode"]) => void;
+  alertsOpen: boolean; setAlertsOpen: (b: boolean) => void;
+}) {
+  const t = useT();
+  const hasTimeline = mode !== "government";
+  const close = () => setSheet(null);
+  return (
+    <div className="pointer-events-none absolute inset-0 z-20">
+      <TopBar mobile />
+
+      {/* floating buttons, right side above the dock */}
+      <div className="absolute bottom-[calc(96px+env(safe-area-inset-bottom))] right-2 flex flex-col items-end gap-2">
+        <button onClick={() => { setAlertsOpen(!alertsOpen); setSheet(null); }} aria-label={t("alerts")} aria-expanded={alertsOpen}
+          className={`glass pointer-events-auto relative grid h-12 w-12 place-items-center rounded-full ${alertsOpen ? "text-red-200 ring-1 ring-red-400/60" : "text-slate-100"}`}>
+          <ShieldAlert size={20} />
+          <span className="absolute -right-1 -top-1 rounded-full bg-red-500 px-1.5 text-[10px] font-semibold text-white">{alerts.length}</span>
+        </button>
+        {mode !== "government" && (
+          <button onClick={() => setSheet(sheet === "layers" ? null : "layers")} aria-label="Layers"
+            className={`glass pointer-events-auto grid h-12 w-12 place-items-center rounded-full ${sheet === "layers" ? "bg-sky-500 text-white" : "text-slate-100"}`}>
+            <Layers size={20} />
+          </button>
+        )}
+      </div>
+
+      {/* legend, bottom-left above the dock */}
+      {hasTimeline && !sheet && (
+        <div className="absolute bottom-[calc(68px+env(safe-area-inset-bottom))] left-2"><Legend meta={meta} compact /></div>
+      )}
+
+      {/* point meteogram card */}
+      {click && !sheet && (
+        <div className="absolute bottom-[calc(126px+env(safe-area-inset-bottom))] left-2 right-2 flex justify-center">
+          <PointCard lng={click.lng} lat={click.lat} onClose={() => setClick(null)} />
+        </div>
+      )}
+
+      {/* bottom dock: ☰ + timeline */}
+      <div className="absolute inset-x-2 bottom-[calc(8px+env(safe-area-inset-bottom))] flex items-center gap-2">
+        <button onClick={() => setSheet(sheet === "menu" ? null : "menu")} aria-label="Menu" aria-expanded={sheet === "menu"}
+          className={`glass pointer-events-auto grid h-11 w-11 shrink-0 place-items-center rounded-xl ${sheet === "menu" ? "bg-sky-500 text-white" : "text-white"}`}>
+          {sheet === "menu" ? <X size={22} /> : <Menu size={22} />}
+        </button>
+        <div className="min-w-0 flex-1">
+          {hasTimeline ? <Timeline meta={meta} compact /> : (
+            <div className="glass pointer-events-auto flex h-11 items-center rounded-xl px-3 text-[12.5px] text-slate-300">
+              {t("mode.government")} — tap ☰ for the district table
+            </div>
+          )}
+        </div>
+      </div>
+
+      {alertsOpen && (
+        <div className="pointer-events-auto absolute inset-x-2 top-[68px] z-40 max-h-[calc(100%-150px)] overflow-y-auto">
+          <AlertsPanel alerts={alerts} onFly={(lng, lat) => { onFly(lng, lat); setAlertsOpen(false); }} />
+        </div>
+      )}
+
+      {/* slide-up sheets (sit above the dock so the timeline stays usable) */}
+      {sheet && (
+        <div className={`glass pointer-events-auto absolute inset-x-0 z-30 flex flex-col rounded-t-2xl bottom-[calc(60px+env(safe-area-inset-bottom))] ${sheet === "menu" ? "top-[68px]" : "max-h-[70%]"}`}>
+          <div className="flex shrink-0 items-center gap-2 border-b border-white/10 px-3 py-2">
+            {sheet === "menu" ? (
+              <div className="min-w-0 flex-1 leading-tight">
+                <div className="truncate text-[14px] font-bold text-white">Bharat Weather Intelligence</div>
+                <div className="text-[11px] text-slate-400">{t("made_by")} <span className="font-semibold text-sky-300">Gaurav Makwana</span></div>
+              </div>
+            ) : (
+              <div className="flex-1 text-[14px] font-semibold text-white">Map layers</div>
+            )}
+            <button onClick={close} aria-label="Close" className="grid h-9 w-9 place-items-center rounded-full bg-white/10 text-white"><X size={18} /></button>
+          </div>
+          <div className="panel-scroll min-h-0 flex-1 overflow-y-auto p-3">
+            {sheet === "layers" ? (
+              <>
+                <LayerPicker meta={meta} sheet />
+                <div className="mt-3"><SourceBadge meta={meta} /></div>
+              </>
+            ) : (
+              <>
+                <div className="grid grid-cols-4 gap-1.5">
+                  {MODES.map((m) => (
+                    <button key={m.id} onClick={() => { setMode(m.id); if (m.id === "map") close(); }} aria-current={mode === m.id}
+                      className={`flex flex-col items-center gap-1 rounded-xl px-1 py-2 text-[11.5px] font-medium ${mode === m.id ? "bg-white text-slate-900" : "bg-white/[0.06] text-slate-200"}`}>
+                      <m.icon size={18} /> <span className="truncate">{t(`mode.${m.id}`)}</span>
+                    </button>
+                  ))}
+                </div>
+                <div className="mt-2"><LanguageSelect big /></div>
+                <div className="mt-3">
+                  {mode === "citizen" && <Citizen />}
+                  {mode === "farmer" && <Farmer />}
+                  {mode === "government" && <Government india={gov.data} err={gov.err} />}
+                  {mode === "map" && <p className="px-1 text-[12.5px] text-slate-400">Tap anywhere on the map for a 10-day forecast of that point.</p>}
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

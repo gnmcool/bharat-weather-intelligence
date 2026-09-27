@@ -4,7 +4,7 @@ import { api, asset, type GeoResult } from "../lib/api";
 import { LANGS, useT, type Lang } from "../lib/i18n";
 import { useApp, type Mode } from "../lib/store";
 
-const MODES: { id: Mode; icon: typeof User }[] = [
+export const MODES: { id: Mode; icon: typeof User }[] = [
   { id: "citizen", icon: User },
   { id: "farmer", icon: Sprout },
   { id: "government", icon: Building2 },
@@ -105,8 +105,21 @@ export function LocationSearch({ state, district, onPick, placeholder, compact }
   );
 }
 
-export default function TopBar() {
-  const { mode, setMode, setPlace, lang, setLang } = useApp();
+export function LanguageSelect({ big }: { big?: boolean }) {
+  const { lang, setLang } = useApp();
+  return (
+    <label className="relative flex shrink-0 items-center" title="Language / भाषा">
+      <Languages size={15} className="pointer-events-none absolute left-2.5 text-sky-300" />
+      <select value={lang} onChange={(e) => setLang(e.target.value as Lang)} aria-label="Language"
+        className={`bwi-select rounded-xl bg-white/[0.06] pl-8 text-white ring-1 ring-white/10 ${big ? "h-11 w-full text-[15px]" : "h-9 max-w-[118px] text-[12.5px]"}`}>
+        {LANGS.map((l) => <option key={l.id} value={l.id} className="bg-ink-900">{l.native}</option>)}
+      </select>
+    </label>
+  );
+}
+
+export default function TopBar({ mobile }: { mobile?: boolean }) {
+  const { mode, setMode, setPlace } = useApp();
   const t = useT();
   const [locating, setLocating] = useState(false);
   const [gpsMsg, setGpsMsg] = useState<string | null>(null);
@@ -144,7 +157,7 @@ export default function TopBar() {
           <div className="text-[10.5px] text-slate-400">{t("made_by")} <span className="font-semibold text-sky-300">Gaurav Makwana</span></div>
         </div>
       </div>
-      <nav className="flex shrink-0 rounded-xl bg-black/25 p-1" aria-label="Mode">
+      {!mobile && <nav className="flex shrink-0 rounded-xl bg-black/25 p-1" aria-label="Mode">
         {MODES.map((m) => (
           <button key={m.id} onClick={() => setMode(m.id)} aria-current={mode === m.id} title={t(`mode.${m.id}`)}
             className={`flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-[12.5px] font-medium transition ${mode === m.id ? "bg-white text-slate-900 shadow" : "text-slate-300 hover:text-white"}`}>
@@ -152,21 +165,15 @@ export default function TopBar() {
             <span className="hidden md:inline">{t(`mode.${m.id}`)}</span>
           </button>
         ))}
-      </nav>
-      <label className="relative flex shrink-0 items-center" title="Language / भाषा">
-        <Languages size={15} className="pointer-events-none absolute left-2.5 text-sky-300" />
-        <select value={lang} onChange={(e) => setLang(e.target.value as Lang)} aria-label="Language"
-          className="bwi-select h-9 max-w-[118px] rounded-xl bg-white/[0.06] pl-8 text-[12.5px] text-white ring-1 ring-white/10">
-          {LANGS.map((l) => <option key={l.id} value={l.id} className="bg-ink-900">{l.native}</option>)}
-        </select>
-      </label>
-      <div className="relative ml-auto flex w-full max-w-md items-center gap-2">
+      </nav>}
+      {!mobile && <LanguageSelect />}
+      <div className={`relative ml-auto flex w-full items-center gap-2 ${mobile ? "" : "max-w-md"}`}>
         <LocationSearch onPick={(r) => setPlace({ name: r.name, lat: r.lat, lon: r.lon, taluka: r.taluka, state: r.state, district: r.district })} compact />
         <button onClick={useGps} title={t("gps")} aria-label={t("gps")} className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-white/[0.06] text-slate-300 ring-1 ring-white/10 hover:text-white">
           {locating ? <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-sky-400 border-t-transparent" /> : <LocateFixed size={16} />}
         </button>
         {gpsMsg && (
-          <div role="alert" className="glass absolute right-0 top-full z-50 mt-2 w-80 rounded-xl p-3 text-[12px] leading-snug text-amber-200">
+          <div role="alert" className="glass absolute right-0 top-full z-50 mt-2 w-80 max-w-[calc(100vw-24px)] rounded-xl p-3 text-[12px] leading-snug text-amber-200">
             {gpsMsg}
           </div>
         )}

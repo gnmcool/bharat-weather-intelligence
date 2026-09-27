@@ -84,6 +84,8 @@ export default function MapView({ meta, choropleth, highlightState, focusDistric
     mapRef.current = map;
 
     map.on("load", async () => {
+      // phones: start with the credits collapsed to the (i) button so they don't cover the legend
+      if (window.innerWidth < 900) el.current?.querySelector(".maplibregl-ctrl-attrib")?.classList.remove("maplibregl-compact-show");
       const style = map.getStyle();
       // Hide OSM-derived boundary lines: India's boundaries are drawn from the platform's own layer.
       for (const l of style.layers ?? []) {

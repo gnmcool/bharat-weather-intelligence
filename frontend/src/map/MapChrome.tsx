@@ -43,7 +43,7 @@ export function resolveVar(meta: GridMeta | undefined, id: LayerId): string {
   return id;
 }
 
-export function LayerPicker({ meta }: { meta?: GridMeta }) {
+export function LayerPicker({ meta, sheet }: { meta?: GridMeta; sheet?: boolean }) {
   const { layer, setLayer, particles, setParticles, gridSource, setGridSource, sat, setSat, satAnim, setSatAnim, satFrameTime, eo, setEo, fires, setFires } = useApp();
   const t = useT();
   const satTime = useSatTime(sat !== "off");
@@ -53,7 +53,7 @@ export function LayerPicker({ meta }: { meta?: GridMeta }) {
     if (meta && cur && !cur.needs.some((n) => meta.variables[n])) setLayer("wind");
   }, [meta, layer, setLayer]);
   return (
-    <div className="glass panel-scroll pointer-events-auto flex max-h-[calc(100vh-290px)] flex-col gap-0.5 overflow-y-auto rounded-2xl p-1.5">
+    <div className={sheet ? "pointer-events-auto flex flex-col gap-0.5" : "glass panel-scroll pointer-events-auto flex max-h-[calc(100vh-290px)] flex-col gap-0.5 overflow-y-auto rounded-2xl p-1.5"}>
       {meta?.sources_available?.includes("ai") && (
         <div className="mb-1 grid grid-cols-2 gap-0.5 rounded-xl bg-black/30 p-0.5 text-[11px]" title="Model source">
           {(["gfs", "ai"] as const).map((s) => (
@@ -63,29 +63,31 @@ export function LayerPicker({ meta }: { meta?: GridMeta }) {
           ))}
         </div>
       )}
+      <div className={sheet ? "grid grid-cols-2 gap-1" : "contents"}>
       {LAYERS.filter((l) => !meta || l.needs.some((n) => meta.variables[n])).map((l) => {
         const on = layer === l.id;
         return (
           <button key={l.id} onClick={() => setLayer(l.id)} title={l.key ? t(l.key) : l.label}
             className={`flex items-center gap-2 rounded-xl px-2.5 py-2 text-left text-[13px] transition ${on ? "bg-sky-500/90 text-white shadow" : "text-slate-200 hover:bg-white/10"}`}>
             <l.icon size={16} strokeWidth={2} />
-            <span className="hidden sm:inline">{l.key ? t(l.key) : l.label}</span>
+            <span className={sheet ? "" : "hidden sm:inline"}>{l.key ? t(l.key) : l.label}</span>
           </button>
         );
       })}
+      </div>
       <div className="my-1 h-px bg-white/10" />
       <button onClick={() => setParticles(!particles)} title="Animated wind particles"
         className={`flex items-center gap-2 rounded-xl px-2.5 py-2 text-[13px] ${particles ? "text-sky-300" : "text-slate-400"} hover:bg-white/10`}>
         <span className={`inline-block h-3 w-6 rounded-full transition ${particles ? "bg-sky-500" : "bg-slate-600"}`}>
           <span className={`block h-3 w-3 rounded-full bg-white transition ${particles ? "translate-x-3" : ""}`} />
         </span>
-        <span className="hidden sm:inline">Particles</span>
+        <span className={sheet ? "" : "hidden sm:inline"}>Particles</span>
       </button>
       <div className="my-1 h-px bg-white/10" />
       <button onClick={() => setSat(sat === "off" ? "ir" : "off")} title="Live satellite imagery — EUMETSAT Meteosat (Indian Ocean), every 15 min"
         className={`flex items-center gap-2 rounded-xl px-2.5 py-2 text-left text-[13px] transition ${sat !== "off" ? "bg-indigo-500/90 text-white shadow" : "text-slate-200 hover:bg-white/10"}`}>
         <Satellite size={16} strokeWidth={2} />
-        <span className="hidden sm:inline">Satellite</span>
+        <span className={sheet ? "" : "hidden sm:inline"}>Satellite</span>
       </button>
       {sat !== "off" && (
         <div className="px-1 pb-1">
@@ -108,12 +110,12 @@ export function LayerPicker({ meta }: { meta?: GridMeta }) {
           </div>
         </div>
       )}
-      <NasaLayers eo={eo} setEo={setEo} fires={fires} setFires={setFires} />
+      <NasaLayers eo={eo} setEo={setEo} fires={fires} setFires={setFires} sheet={sheet} />
     </div>
   );
 }
 
-export function Legend({ meta }: { meta?: GridMeta }) {
+export function Legend({ meta, compact }: { meta?: GridMeta; compact?: boolean }) {
   const { layer } = useApp();
   const v = resolveVar(meta, layer);
   const p = PALETTES[v];
@@ -121,7 +123,7 @@ export function Legend({ meta }: { meta?: GridMeta }) {
   const min = p.stops[0][0];
   const max = p.stops[p.stops.length - 1][0];
   return (
-    <div className="glass pointer-events-auto w-[260px] rounded-xl px-3 py-2">
+    <div className={`glass pointer-events-auto rounded-xl ${compact ? "w-[190px] px-2 py-1" : "w-[260px] px-3 py-2"}`}>
       <div className="mb-1 flex justify-between text-[11px] text-slate-300">
         <span className="font-medium text-white">{p.label}</span>
         <span>{p.unit}</span>
@@ -136,7 +138,7 @@ export function Legend({ meta }: { meta?: GridMeta }) {
   );
 }
 
-export function Timeline({ meta }: { meta?: GridMeta }) {
+export function Timeline({ meta, compact }: { meta?: GridMeta; compact?: boolean }) {
   const { timeIndex, setTimeIndex, playing, setPlaying } = useApp();
   const times = meta?.times ?? [];
   // default to the step nearest to now
@@ -161,27 +163,32 @@ export function Timeline({ meta }: { meta?: GridMeta }) {
   const days = useMemo(() => {
     const out: { label: string; start: number; len: number }[] = [];
     times.forEach((t, i) => {
-      const lbl = new Date(t).toLocaleDateString("en-IN", { timeZone: TZ, weekday: "short", day: "numeric" });
+      const d = new Date(t);
+      const lbl = compact
+        ? d.toLocaleDateString("en-IN", { timeZone: TZ, day: "numeric" })
+        : d.toLocaleDateString("en-IN", { timeZone: TZ, weekday: "short", day: "numeric" });
       const last = out[out.length - 1];
       if (last && last.label === lbl) last.len++;
       else out.push({ label: lbl, start: i, len: 1 });
     });
     return out;
-  }, [times]);
+  }, [times, compact]);
 
   if (!times.length) return null;
   const i = Math.max(0, Math.min(times.length - 1, timeIndex));
   const nowIdx = times.findIndex((t) => new Date(t).getTime() > Date.now());
   return (
-    <div className="glass pointer-events-auto flex w-full items-center gap-2 rounded-xl px-2 py-1">
+    <div className={`glass pointer-events-auto flex w-full items-center gap-2 rounded-xl px-2 ${compact ? "h-11 py-1" : "py-1"}`}>
       <button onClick={() => setPlaying(!playing)} aria-label={playing ? "Pause" : "Play"}
-        className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-sky-500 text-white shadow hover:bg-sky-400">
+        className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-sky-500 text-white shadow hover:bg-sky-400">
         {playing ? <Pause size={13} /> : <Play size={13} className="ml-0.5" />}
       </button>
       <div className="min-w-0 flex-1">
         <div className="relative flex h-3.5 text-[9.5px] leading-none text-slate-400">
           {days.map((d) => (
-            <div key={d.start} className="truncate border-l border-white/10 pl-1" style={{ width: `${(d.len / times.length) * 100}%` }}>{d.label}</div>
+            <div key={d.start} className={`truncate border-l border-white/10 ${compact ? "text-center" : "pl-1"}`} style={{ width: `${(d.len / times.length) * 100}%` }}>
+              {compact && d.len < 4 ? "" : d.label}
+            </div>
           ))}
         </div>
         <div className="relative -mt-0.5">
@@ -190,8 +197,12 @@ export function Timeline({ meta }: { meta?: GridMeta }) {
         </div>
       </div>
       <div className="shrink-0 text-right leading-tight">
-        <div className="text-[11.5px] font-semibold text-white">{fmtDateTime(times[i])}</div>
-        <div className="text-[9.5px] text-slate-400">IST · {i + 1}/{times.length}</div>
+        <div className={`${compact ? "text-[11px]" : "text-[11.5px]"} font-semibold text-white`}>
+          {compact
+            ? new Date(times[i]).toLocaleString("en-IN", { timeZone: TZ, weekday: "short", hour: "numeric" })
+            : fmtDateTime(times[i])}
+        </div>
+        <div className="text-[9.5px] text-slate-400">IST{compact ? "" : ` · ${i + 1}/${times.length}`}</div>
       </div>
     </div>
   );
@@ -217,7 +228,7 @@ export function SourceBadge({ meta }: { meta?: GridMeta }) {
 
 const EO_ICON: Record<string, typeof Wind> = { rain_now: CloudRain, flood: Waves, soil: Sprout, ndvi: Leaf, truecolor: Globe2 };
 
-function NasaLayers({ eo, setEo, fires, setFires }: { eo: string; setEo: (s: string) => void; fires: boolean; setFires: (b: boolean) => void }) {
+function NasaLayers({ eo, setEo, fires, setFires, sheet }: { eo: string; setEo: (s: string) => void; fires: boolean; setFires: (b: boolean) => void; sheet?: boolean }) {
   const [layers, setLayers] = useState<EoLayer[]>([]);
   const [fireMeta, setFireMeta] = useState<{ count: number; latest: string | null } | null>(null);
   useEffect(() => {
@@ -240,14 +251,14 @@ function NasaLayers({ eo, setEo, fires, setFires }: { eo: string; setEo: (s: str
           <button key={l.id} onClick={() => setEo(on ? "none" : l.id)} title={l.desc}
             className={`flex items-center gap-2 rounded-xl px-2.5 py-1.5 text-left text-[12.5px] transition ${on ? "bg-emerald-600/90 text-white shadow" : "text-slate-200 hover:bg-white/10"}`}>
             <Icon size={15} strokeWidth={2} />
-            <span className="hidden sm:inline">{l.label}</span>
+            <span className={sheet ? "" : "hidden sm:inline"}>{l.label}</span>
           </button>
         );
       })}
       <button onClick={() => setFires(!fires)} title="Active fires detected by NASA VIIRS satellites in the last 24 hours (FIRMS)"
         className={`flex items-center gap-2 rounded-xl px-2.5 py-1.5 text-left text-[12.5px] transition ${fires ? "bg-orange-600/90 text-white shadow" : "text-slate-200 hover:bg-white/10"}`}>
         <Flame size={15} strokeWidth={2} />
-        <span className="hidden sm:inline">Fires (24 h){fires && fireMeta ? ` · ${fireMeta.count}` : ""}</span>
+        <span className={sheet ? "" : "hidden sm:inline"}>Fires (24 h){fires && fireMeta ? ` · ${fireMeta.count}` : ""}</span>
       </button>
       {cur && (
         <div className="mx-1 mt-1 max-w-[190px] rounded-lg bg-black/30 p-1.5 text-[10px] leading-snug text-slate-400">
