@@ -11,3 +11,4 @@ backend/data/grids/*.tmp.nc
 backend/data/*.log
 *.zip
 *.tsbuildinfo
+PUBLIC LINK.txt

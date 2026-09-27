@@ -2,6 +2,7 @@
 (or via backend/.env)."""
 from __future__ import annotations
 
+import os
 import pathlib
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -16,9 +17,15 @@ class Settings(BaseSettings):
     data_dir: pathlib.Path = BACKEND_ROOT / "data"
     # Where the Earth2Studio worker writes its NetCDF forecast stores
     grid_store_dir: pathlib.Path = BACKEND_ROOT / "data" / "grids"
+    # Writable cache folder (cloud hosts: set BWI_CACHE_DIR=/tmp/bwi-cache)
+    cache_dir: pathlib.Path | None = None
+    # Cloud mode: download the latest Earth2Studio store published by the GitHub Actions ingest
+    # (e.g. https://github.com/<owner>/<repo>/releases/download/forecast/gfs_latest.nc)
+    grid_store_url: str | None = None
+    grid_store_refresh_min: float = 30.0
 
     # Service
-    cors_origins: list[str] = ["http://localhost:5173", "http://127.0.0.1:5173"]
+    cors_origins: list[str] = ["http://localhost:5173", "http://127.0.0.1:5173", "https://gnmcool.github.io"]
     timezone: str = "Asia/Kolkata"
 
     # Providers
@@ -49,3 +56,13 @@ class Settings(BaseSettings):
 
 
 settings = Settings()
+
+# Cloud deployment (Vercel sets VERCEL=1): the code folder is read-only, so caches and the
+# downloaded Earth2Studio store live in /tmp, and the store comes from the GitHub Actions ingest.
+if os.environ.get("VERCEL"):
+    if "BWI_CACHE_DIR" not in os.environ:
+        settings.cache_dir = pathlib.Path("/tmp/bwi-cache")
+    if "BWI_GRID_STORE_DIR" not in os.environ:
+        settings.grid_store_dir = pathlib.Path("/tmp/bwi-grids")
+    if "BWI_GRID_STORE_URL" not in os.environ:
+        settings.grid_store_url = "https://github.com/gnmcool/bharat-weather-intelligence/releases/download/forecast/gfs_latest.nc"

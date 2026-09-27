@@ -1,7 +1,7 @@
 import { MapPin, X } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { Bar, ComposedChart, Line, ReferenceLine, ResponsiveContainer, XAxis, YAxis } from "recharts";
-import { api, type GridPoint, type Location } from "../lib/api";
+import { api, apiUrl, type GridPoint, type Location } from "../lib/api";
 import { fmtTime, n } from "../lib/format";
 import { useApp } from "../lib/store";
 
@@ -12,7 +12,7 @@ export default function PointCard({ lng, lat, onClose }: { lng: number; lat: num
   useEffect(() => {
     setGp(null);
     api.gridPoint(lat, lng, gridSource).then(setGp).catch(() => undefined);
-    fetch(`/api/v1/geo/locate?lat=${lat}&lon=${lng}`).then((r) => r.json()).then(setLoc).catch(() => undefined);
+    fetch(apiUrl(`/geo/locate?lat=${lat}&lon=${lng}`)).then((r) => r.json()).then(setLoc).catch(() => undefined);
   }, [lat, lng, gridSource]);
   const rows = useMemo(
     () => (gp ? gp.time.map((t, i) => ({ i, t, temp: gp.series.t2m?.[i], rain: gp.series.tp?.[i] })) : []),

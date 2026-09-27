@@ -159,7 +159,6 @@ async def warnings(state: str | None = None, district: str | None = None, includ
     return out
 
 
-_poly_sem = asyncio.Semaphore(3)
 _poly_fail: dict[str, float] = {}
 
 
@@ -179,7 +178,7 @@ async def polygon(url: str) -> dict[str, Any] | None:
     if _time.time() - _poly_fail.get("_", 0) < 1800:
         return None
     try:
-        async with _poly_sem:
+        async with http.semaphore("sachet-poly", 3):
             r = await http.get(url, retries=0, timeout=20)
         root = ET.fromstring(r.content)
     except Exception:  # noqa: BLE001

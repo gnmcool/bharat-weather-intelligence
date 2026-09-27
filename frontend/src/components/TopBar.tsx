@@ -1,6 +1,6 @@
 import { Building2, Languages, LocateFixed, Map as MapIcon, Search, Sprout, User } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
-import { api, type GeoResult } from "../lib/api";
+import { api, asset, type GeoResult } from "../lib/api";
 import { LANGS, useT, type Lang } from "../lib/i18n";
 import { useApp, type Mode } from "../lib/store";
 
@@ -138,7 +138,7 @@ export default function TopBar() {
   return (
     <header className="glass pointer-events-auto absolute left-2 right-2 top-2 z-30 flex h-14 items-center gap-2 rounded-2xl px-3 md:left-3 md:right-3 md:top-3 md:gap-3">
       <div className="flex shrink-0 items-center gap-2">
-        <img src="/favicon.svg" alt="" className="h-8 w-8" />
+        <img src={asset("/favicon.svg")} alt="" className="h-8 w-8" />
         <div className="hidden leading-tight lg:block" title="Weather → Impact → Decision">
           <div className="text-[14px] font-bold tracking-tight text-white">Bharat Weather Intelligence</div>
           <div className="text-[10.5px] text-slate-400">{t("made_by")} <span className="font-semibold text-sky-300">Gaurav Makwana</span></div>

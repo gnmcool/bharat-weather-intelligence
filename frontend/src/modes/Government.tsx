@@ -1,7 +1,7 @@
 import { ArrowLeft, ArrowUpDown, ExternalLink, FileSpreadsheet, Printer } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { ErrorBox, LevelPill, Section, Sources, Spinner, WarningCard } from "../components/ui";
-import { api, type RegionIndia, type RegionState, type StateDistrictRow, type StateItem } from "../lib/api";
+import { api, apiUrl, asset, type RegionIndia, type RegionState, type StateDistrictRow, type StateItem } from "../lib/api";
 import { fmtDateTime, LEVEL, n, signed } from "../lib/format";
 import { useApp } from "../lib/store";
 import type { Choropleth } from "../map/MapView";
@@ -18,7 +18,7 @@ const WINDOWS = [[24, "24 h"], [72, "72 h"], [120, "5 days"]] as const;
 type DistMeta = Record<string, { district: string; state: string; state_slug: string }>;
 let distMetaP: Promise<DistMeta> | null = null;
 export function districtMeta(): Promise<DistMeta> {
-  distMetaP ??= fetch("/geo/india_districts.geojson")
+  distMetaP ??= fetch(asset("/geo/india_districts.geojson"))
     .then((r) => r.json())
     .then((fc: GeoJSON.FeatureCollection) => Object.fromEntries(fc.features.map((f) => [f.properties!.id, { district: f.properties!.district, state: f.properties!.state, state_slug: f.properties!.state_slug }])));
   return distMetaP;
@@ -162,11 +162,11 @@ function StatePanel({ slug }: { slug: string }) {
       <Section title={<span className="flex items-center gap-2"><button onClick={() => setGov({ govState: undefined, focusDistrict: undefined })} className="rounded p-0.5 hover:bg-white/10" aria-label="Back to India"><ArrowLeft size={14} /></button>{d.state}</span>}
         right={<span className="text-[11px] text-slate-500">{d.districts.length} districts · 7 days</span>}>
         <div className="mb-2 flex gap-2">
-          <a href={`/api/v1/region/state/${slug}/export.xlsx`} download
+          <a href={apiUrl(`/region/state/${slug}/export.xlsx`)} download
             className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-lg bg-emerald-600 px-2 py-1.5 text-[12px] font-medium text-white hover:bg-emerald-500">
             <FileSpreadsheet size={14} /> Excel report
           </a>
-          <a href={`/api/v1/region/state/${slug}/report.html`} target="_blank" rel="noreferrer"
+          <a href={apiUrl(`/region/state/${slug}/report.html`)} target="_blank" rel="noreferrer"
             className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-lg bg-white/10 px-2 py-1.5 text-[12px] font-medium text-white hover:bg-white/20">
             <Printer size={14} /> Briefing / PDF
           </a>

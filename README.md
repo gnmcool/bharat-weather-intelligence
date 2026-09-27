@@ -57,6 +57,17 @@ git clone https://github.com/gnmcool/bharat-weather-intelligence.git
 On Windows, after the one-time setup below, double-click **Start Bharat Weather.bat** to run the app
 and **Update Forecast.bat** to pull a fresh Earth2Studio forecast.
 
+## Online version
+
+| Part | Where | Updates |
+|---|---|---|
+| Website | GitHub Pages — https://gnmcool.github.io/bharat-weather-intelligence/ | `.github/workflows/pages.yml`, on every push to `frontend/` |
+| API (FastAPI) | Vercel, project root `backend/` (`backend/vercel.json`, Mumbai region) | Vercel builds on every push |
+| Forecast grids | GitHub Actions runs the Earth2Studio GFS worker every 6 h (`.github/workflows/forecast.yml`) and publishes `gfs_latest.nc` to the `forecast` release; the API downloads it | 4× a day |
+
+The experimental FourCastNet AI layer needs a GPU and stays on the local (WSL) setup.
+If the API address changes, set the repository variable `BWI_API_BASE` (e.g. `https://<project>.vercel.app/api/v1`).
+
 ## Run it (Windows 11 + WSL2)
 
 Your Earth2Studio environment stays untouched; the app uses its own venv.

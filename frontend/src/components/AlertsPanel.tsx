@@ -1,6 +1,6 @@
 import { MapPin, ShieldAlert, X } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
-import type { OfficialWarning } from "../lib/api";
+import { asset, type OfficialWarning } from "../lib/api";
 import { SEVERITY_COLOR } from "../lib/format";
 import { useT } from "../lib/i18n";
 import { useApp } from "../lib/store";
@@ -9,7 +9,7 @@ import { WarningCard } from "./ui";
 type DMeta = Record<string, { district: string; state: string; lat: number; lon: number }>;
 let metaP: Promise<DMeta> | null = null;
 const districtMeta = () =>
-  (metaP ??= fetch("/geo/india_districts.geojson")
+  (metaP ??= fetch(asset("/geo/india_districts.geojson"))
     .then((r) => r.json())
     .then((fc: GeoJSON.FeatureCollection) =>
       Object.fromEntries(fc.features.map((f) => [f.properties!.id, { district: f.properties!.district, state: f.properties!.state, lat: f.properties!.lat, lon: f.properties!.lon }])),

@@ -23,6 +23,9 @@ class TTLCache:
         hit = self._d.get(key)
         if hit and hit[0] > time.time():
             return hit[1]
+        loop = asyncio.get_running_loop()
+        if getattr(self, "_loop", None) is not loop:  # serverless hosts may run each request in a new loop
+            self._loop, self._locks = loop, {}
         lock = self._locks.setdefault(key, asyncio.Lock())
         async with lock:
             hit = self._d.get(key)
@@ -42,7 +45,7 @@ cache = TTLCache()
 
 def _disk_path(namespace: str, key: str) -> pathlib.Path:
     h = hashlib.sha1(key.encode()).hexdigest()[:20]
-    p = settings.data_dir / "cache" / namespace
+    p = (settings.cache_dir or settings.data_dir / "cache") / namespace
     p.mkdir(parents=True, exist_ok=True)
     return p / f"{h}.json"
 

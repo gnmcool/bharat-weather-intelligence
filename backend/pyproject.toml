@@ -28,3 +28,7 @@ package = false
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 pythonpath = ["."]
+
+[tool.vercel]
+# Cloud deployment (Vercel project root = backend/)
+entrypoint = "app.main:app"

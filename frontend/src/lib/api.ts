@@ -1,5 +1,10 @@
 // Typed client for the FastAPI backend. All requests go to /api/v1 (proxied by Vite in dev).
-const BASE = (import.meta.env.VITE_API_BASE as string | undefined) ?? "/api/v1";
+// VITE_API_BASE = full server URL when the UI is hosted elsewhere (e.g. GitHub Pages → Hugging Face).
+const BASE = ((import.meta.env.VITE_API_BASE as string | undefined) ?? "/api/v1").replace(/\/$/, "");
+/** API URL usable anywhere (fetch, <a href>, map tile templates). */
+export const apiUrl = (path: string) => `${BASE.startsWith("http") ? BASE : `${location.origin}${BASE}`}${path}`;
+/** Files in frontend/public, respecting the deploy base path (GitHub Pages serves under /repo-name/). */
+export const asset = (path: string) => `${import.meta.env.BASE_URL}${path.replace(/^\//, "")}`;
 
 async function get<T>(path: string, params?: Record<string, string | number | undefined | null>, signal?: AbortSignal): Promise<T> {
   const q = new URLSearchParams();

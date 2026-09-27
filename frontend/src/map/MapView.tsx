@@ -1,7 +1,7 @@
 import maplibregl, { type GeoJSONSource, type ImageSource, type Map as MLMap } from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import { useEffect, useRef, useState } from "react";
-import { api, type GridField, type GridMeta, type GridWind } from "../lib/api";
+import { api, apiUrl, asset, type GridField, type GridMeta, type GridWind } from "../lib/api";
 import { useApp } from "../lib/store";
 import { PALETTES } from "./colormaps";
 import { renderField } from "./field";
@@ -105,14 +105,14 @@ export default function MapView({ meta, choropleth, highlightState, focusDistric
       // Satellite imagery (EUMETSAT Meteosat IODC via our tile proxy) sits above the model field
       map.addSource("sat", {
         type: "raster",
-        tiles: [`${location.origin}/api/v1/sat/tile/ir/{z}/{x}/{y}.png`],
+        tiles: [apiUrl("/sat/tile/ir/{z}/{x}/{y}.png")],
         tileSize: 256, minzoom: 2, maxzoom: 9,
         attribution: "© EUMETSAT (Meteosat IODC)",
       });
       map.addLayer({ id: "sat", type: "raster", source: "sat", layout: { visibility: "none" },
         paint: { "raster-opacity": 0.9, "raster-fade-duration": 200 } }, firstSymbol);
       // NASA GIBS overlay (tiles set when a layer is chosen) and FIRMS fire points
-      map.addSource("eo", { type: "raster", tiles: [`${location.origin}/favicon.svg`], tileSize: 256, maxzoom: 9,
+      map.addSource("eo", { type: "raster", tiles: [new URL(asset("/favicon.svg"), location.href).href], tileSize: 256, maxzoom: 9,
         attribution: "NASA EOSDIS GIBS / FIRMS" });
       map.addLayer({ id: "eo", type: "raster", source: "eo", layout: { visibility: "none" }, paint: { "raster-opacity": 0.85 } }, firstSymbol);
       map.addSource("fires", { type: "geojson", data: { type: "FeatureCollection", features: [] } });
@@ -124,8 +124,8 @@ export default function MapView({ meta, choropleth, highlightState, focusDistric
           "circle-color": ["interpolate", ["linear"], ["get", "frp"], 0, "#ffd166", 10, "#ff7b00", 50, "#ff1f1f"],
           "circle-stroke-color": "#3b0a00", "circle-stroke-width": 0.4,
         } });
-      map.addSource("districts", { type: "geojson", data: "/geo/india_districts.geojson", promoteId: "id" });
-      map.addSource("states", { type: "geojson", data: "/geo/india_states.geojson" });
+      map.addSource("districts", { type: "geojson", data: new URL(asset("/geo/india_districts.geojson"), location.href).href, promoteId: "id" });
+      map.addSource("states", { type: "geojson", data: new URL(asset("/geo/india_states.geojson"), location.href).href });
       map.addLayer({ id: "district-fill", type: "fill", source: "districts", layout: { visibility: "none" },
         paint: { "fill-color": "#000", "fill-opacity": ["case", ["boolean", ["feature-state", "hover"], false], 0.95, 0.8] } }, firstSymbol);
       map.addLayer({ id: "district-line", type: "line", source: "districts", minzoom: 4.8,
@@ -197,7 +197,7 @@ export default function MapView({ meta, choropleth, highlightState, focusDistric
     map.setLayoutProperty("sat", "visibility", on ? "visible" : "none");
     if (!on) return;
     const src = map.getSource("sat") as maplibregl.RasterTileSource;
-    const set = () => src.setTiles([`${location.origin}/api/v1/sat/tile/${sat}/{z}/{x}/{y}.png?t=${Math.floor(Date.now() / 600000)}`]);
+    const set = () => src.setTiles([apiUrl(`/sat/tile/${sat}/{z}/{x}/{y}.png?t=${Math.floor(Date.now() / 600000)}`)]);
     set();
     // the colour field underneath is dimmed so clouds read clearly
     map.setPaintProperty("sat", "raster-opacity", sat === "ir" ? 0.95 : 0.85);
@@ -238,7 +238,7 @@ export default function MapView({ meta, choropleth, highlightState, focusDistric
     const on = fires && mode !== "government";
     for (const id of ["fires", "fires-glow"]) map.setLayoutProperty(id, "visibility", on ? "visible" : "none");
     if (!on) return;
-    fetch("/api/v1/earthobs/fires").then((r) => r.json()).then((fc) => (map.getSource("fires") as GeoJSONSource).setData(fc)).catch(() => undefined);
+    fetch(apiUrl("/earthobs/fires")).then((r) => r.json()).then((fc) => (map.getSource("fires") as GeoJSONSource).setData(fc)).catch(() => undefined);
   }, [ready, fires, mode]);
 
   // ---- satellite animation: last 3 h of frames, preloaded as hidden layers and cycled ----
@@ -249,13 +249,13 @@ export default function MapView({ meta, choropleth, highlightState, focusDistric
     let timer: ReturnType<typeof setInterval> | undefined;
     const ids: string[] = [];
     const firstSymbol = map.getStyle().layers?.find((l) => l.type === "symbol")?.id;
-    fetch(`/api/v1/sat/frames?product=${sat}&hours=3&step=30`).then((r) => r.json()).then((j: { times: string[] }) => {
+    fetch(apiUrl(`/sat/frames?product=${sat}&hours=3&step=30`)).then((r) => r.json()).then((j: { times: string[] }) => {
       if (cancelled) return;
       j.times.forEach((t, k) => {
         const id = `satf-${k}`;
         ids.push(id);
         map.addSource(id, { type: "raster", tileSize: 256, minzoom: 2, maxzoom: 9,
-          tiles: [`${location.origin}/api/v1/sat/tile/${sat}/{z}/{x}/{y}.png?time=${encodeURIComponent(t)}`] });
+          tiles: [apiUrl(`/sat/tile/${sat}/{z}/{x}/{y}.png?time=${encodeURIComponent(t)}`)] });
         // opacity 0 (not visibility none) so every frame's tiles load up-front
         map.addLayer({ id, type: "raster", source: id, paint: { "raster-opacity": 0, "raster-fade-duration": 0 } }, firstSymbol);
       });

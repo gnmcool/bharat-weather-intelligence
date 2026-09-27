@@ -1,5 +1,5 @@
 import { Cloud, CloudRain, Droplets, Flame, Gauge, Globe2, Leaf, Pause, Play, Satellite, Sprout, Thermometer, Waves, Wind, Zap } from "lucide-react";
-import { api, type EoLayer } from "../lib/api";
+import { api, apiUrl, type EoLayer } from "../lib/api";
 import { useEffect, useMemo, useState } from "react";
 import { useT } from "../lib/i18n";
 import type { GridMeta } from "../lib/api";
@@ -28,7 +28,7 @@ function useSatTime(on: boolean) {
   const [t, setT] = useState<string | null>(null);
   useEffect(() => {
     if (!on) return;
-    const load = () => fetch("/api/v1/sat/meta").then((r) => r.json()).then((j) => setT(j.latest?.ir ?? null)).catch(() => undefined);
+    const load = () => fetch(apiUrl("/sat/meta")).then((r) => r.json()).then((j) => setT(j.latest?.ir ?? null)).catch(() => undefined);
     load();
     const id = setInterval(load, 5 * 60 * 1000);
     return () => clearInterval(id);
@@ -225,7 +225,7 @@ function NasaLayers({ eo, setEo, fires, setFires }: { eo: string; setEo: (s: str
   }, []);
   useEffect(() => {
     if (!fires) return;
-    fetch("/api/v1/earthobs/fires").then((r) => r.json()).then((j) => setFireMeta(j.meta)).catch(() => undefined);
+    fetch(apiUrl("/earthobs/fires")).then((r) => r.json()).then((j) => setFireMeta(j.meta)).catch(() => undefined);
   }, [fires]);
   const cur = layers.find((l) => l.id === eo);
   const date = (t: string) => (t.includes("T") ? new Date(t).toLocaleString("en-IN", { timeZone: "Asia/Kolkata", day: "numeric", month: "short", hour: "numeric", minute: "2-digit" }) + " IST" : new Date(t + "T12:00:00Z").toLocaleDateString("en-IN", { day: "numeric", month: "short" }));

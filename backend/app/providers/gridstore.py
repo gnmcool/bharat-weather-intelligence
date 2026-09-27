@@ -14,6 +14,7 @@ from __future__ import annotations
 
 import logging
 import pathlib
+import time
 from datetime import datetime, timezone
 from functools import lru_cache
 from typing import Any
@@ -23,6 +24,7 @@ import xarray as xr
 
 from ..config import settings
 from ..schemas import GridMeta
+from .. import http
 from . import openmeteo
 
 log = logging.getLogger("bwi.grid")
@@ -103,7 +105,49 @@ class Grid:
         return a
 
 
+_remote = {"checked": 0.0, "etag": None}
+
+
+async def sync_remote_store() -> None:
+    """Cloud mode: fetch the newest Earth2Studio store published by the GitHub Actions ingest
+    (settings.grid_store_url). Checked at most every grid_store_refresh_min; ETag avoids
+    re-downloading an unchanged file."""
+    url = settings.grid_store_url
+    if not url or time.time() - _remote["checked"] < settings.grid_store_refresh_min * 60:
+        return
+    async with http.semaphore("grid-sync", 1):
+        if time.time() - _remote["checked"] < settings.grid_store_refresh_min * 60:
+            return
+        _remote["checked"] = time.time()
+        d = settings.grid_store_dir
+        d.mkdir(parents=True, exist_ok=True)
+        tmp = d / "download.part"
+        headers = {"If-None-Match": _remote["etag"]} if _remote["etag"] and any(d.glob("gfs_*.nc")) else {}
+        try:
+            async with http.client().stream("GET", url, headers=headers, timeout=180) as r:
+                if r.status_code == 304:
+                    return
+                r.raise_for_status()
+                with open(tmp, "wb") as f:
+                    async for chunk in r.aiter_bytes(1 << 20):
+                        f.write(chunk)
+                _remote["etag"] = r.headers.get("etag")
+            with xr.open_dataset(tmp) as ds:
+                issue = datetime.fromisoformat(str(ds.attrs["issue_time"]).replace("Z", "+00:00"))
+            name = f"gfs_{issue:%Y%m%d%H}.nc"
+            tmp.replace(d / name)
+            for old in d.glob("gfs_*.nc"):
+                if old.name != name:
+                    old.unlink(missing_ok=True)
+            log.info("Downloaded Earth2Studio store %s", name)
+        except Exception as e:  # noqa: BLE001 — keep serving the old store / fallback
+            log.warning("Remote grid store unavailable: %s", e)
+            tmp.unlink(missing_ok=True)
+
+
 async def get_grid(source: str = "gfs") -> Grid:
+    if source == "gfs":
+        await sync_remote_store()
     path = latest_store(source)
     if path is None and source == "ai":
         raise FileNotFoundError("No Earth2Studio AI store — run workers/e2s_ai_forecast.py")
@@ -116,7 +160,7 @@ async def get_grid(source: str = "gfs") -> Grid:
                     source=ds.attrs.get("source", "NOAA GFS via Earth2Studio"), model=ds.attrs.get("model", "GFS 0.25°"),
                     issue=datetime.fromisoformat(issue) if issue else None,
                     note=(f"0.25° AI forecast (experimental) from Earth2Studio ({path.name})" if source == "ai"
-                          else f"0.25° (~27 km) GFS grid processed locally by Earth2Studio ({path.name})"),
+                          else f"0.25° (~27 km) GFS grid processed by Earth2Studio ({path.name})"),
                     notices=(["EXPERIMENTAL AI forecast (FourCastNet). Not used for risk or warnings — compare with GFS."] if source == "ai" else []))
     g = await openmeteo.coarse_grid()
     return Grid(g["lats"], g["lons"], g["times"], g["fields"], source="Open-Meteo (fallback)", model="NOAA GFS 0.25° sampled",

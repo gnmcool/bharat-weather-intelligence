@@ -95,14 +95,8 @@ async def frames(product: str = "ir", hours: float = 3.0, step_min: int = 30) ->
 
 # EUMETSAT tiles are fetched at most 6 at a time so an animation (≈250 tiles) never starves the
 # shared HTTP pool used by forecasts, warnings and baselines.
-_SAT_SEM: "asyncio.Semaphore | None" = None
-
-
 def _sem():
-    global _SAT_SEM
-    if _SAT_SEM is None:
-        _SAT_SEM = asyncio.Semaphore(6)
-    return _SAT_SEM
+    return http.semaphore("eumetsat", 6)
 
 
 _TIME_RE = re.compile(r"^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:00Z$")

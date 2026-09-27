@@ -8,6 +8,8 @@ export default defineConfig({
   server: {
     host: true,
     port: 5173,
+    // public link via Cloudflare Tunnel (scripts/dev-wsl.sh) — allow its hostnames
+    allowedHosts: [".trycloudflare.com"],
     proxy: { "/api": { target: process.env.BWI_API ?? "http://127.0.0.1:8000", changeOrigin: true } },
   },
   build: { chunkSizeWarningLimit: 1800 },

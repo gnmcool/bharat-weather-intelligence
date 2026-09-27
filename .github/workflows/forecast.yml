@@ -1,0 +1,51 @@
+# Earth2Studio GFS ingest in the cloud — the same worker you run in WSL, on a GitHub runner.
+# Every 6 h it pulls the newest NOAA GFS 0.25° cycle through NVIDIA Earth2Studio (GFS_FX, no GPU
+# needed), writes the India NetCDF store and publishes it as the release asset
+# "forecast/gfs_latest.nc", which the cloud API downloads.
+name: Forecast (Earth2Studio GFS ingest)
+
+on:
+  schedule:
+    - cron: "40 4,10,16,22 * * *"   # ~4.5 h after each GFS cycle (00/06/12/18 UTC)
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: forecast
+  cancel-in-progress: false
+
+jobs:
+  ingest:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+      - name: Install Earth2Studio (CPU)
+        run: |
+          python -m pip install --upgrade pip
+          pip install torch --index-url https://download.pytorch.org/whl/cpu
+          pip install "earth2studio==0.17.*" netCDF4
+      - name: Ingest latest GFS cycle (10 days, 3-hourly)
+        env:
+          LOGURU_LEVEL: WARNING
+        run: |
+          cd backend
+          python workers/e2s_gfs_ingest.py --hours 240 --out "$RUNNER_TEMP/grids"
+          f=$(ls "$RUNNER_TEMP"/grids/gfs_*.nc | tail -1)
+          echo "Store: $f ($(du -h "$f" | cut -f1))"
+          cp "$f" "$RUNNER_TEMP/gfs_latest.nc"
+          echo "STORE_NAME=$(basename "$f")" >> "$GITHUB_ENV"
+      - name: Publish to release "forecast"
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release view forecast >/dev/null 2>&1 || gh release create forecast --title "Latest forecast store" \
+            --notes "Rolling Earth2Studio GFS store, refreshed every 6 h by the Forecast workflow. Not a software release." --latest=false
+          gh release upload forecast "$RUNNER_TEMP/gfs_latest.nc" --clobber
+          gh release edit forecast --notes "Rolling Earth2Studio GFS store, refreshed every 6 h by the Forecast workflow. Current: $STORE_NAME"
