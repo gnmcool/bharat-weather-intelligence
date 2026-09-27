@@ -209,8 +209,8 @@ function MobileChrome({ meta, alerts, click, setClick, sheet, setSheet, gov, onF
     <div className="pointer-events-none absolute inset-0 z-20">
       <TopBar mobile />
 
-      {/* floating buttons, right side above the dock */}
-      <div className="absolute bottom-[calc(96px+env(safe-area-inset-bottom))] right-2 flex flex-col items-end gap-2">
+      {/* floating buttons, right side above the dock (hidden while a point card is open) */}
+      {!click && <div className="absolute bottom-[calc(96px+env(safe-area-inset-bottom))] right-2 flex flex-col items-end gap-2">
         <button onClick={() => { setAlertsOpen(!alertsOpen); setSheet(null); }} aria-label={t("alerts")} aria-expanded={alertsOpen}
           className={`glass pointer-events-auto relative grid h-12 w-12 place-items-center rounded-full ${alertsOpen ? "text-red-200 ring-1 ring-red-400/60" : "text-slate-100"}`}>
           <ShieldAlert size={20} />
@@ -222,7 +222,7 @@ function MobileChrome({ meta, alerts, click, setClick, sheet, setSheet, gov, onF
             <Layers size={20} />
           </button>
         )}
-      </div>
+      </div>}
 
       {/* legend, bottom-left above the dock */}
       {hasTimeline && !sheet && (

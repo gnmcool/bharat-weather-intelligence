@@ -187,7 +187,7 @@ export function Timeline({ meta, compact }: { meta?: GridMeta; compact?: boolean
         <div className="relative flex h-3.5 text-[9.5px] leading-none text-slate-400">
           {days.map((d) => (
             <div key={d.start} className={`truncate border-l border-white/10 ${compact ? "text-center" : "pl-1"}`} style={{ width: `${(d.len / times.length) * 100}%` }}>
-              {compact && d.len < 4 ? "" : d.label}
+              {compact && d.len < 6 ? "" : d.label}
             </div>
           ))}
         </div>
