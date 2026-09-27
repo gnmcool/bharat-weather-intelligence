@@ -1,0 +1,13 @@
+node_modules/
+frontend/dist/
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+backend/.env
+backend/data/cache/
+backend/data/grids/*.nc
+backend/data/grids/*.tmp.nc
+backend/data/*.log
+*.zip
+*.tsbuildinfo

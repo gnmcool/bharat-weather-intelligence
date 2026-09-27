@@ -1,0 +1,15 @@
+# Optional PostGIS for archiving (the app runs without it).
+#   docker compose up -d db
+#   export BWI_DATABASE_URL=postgresql://bwi:bwi@localhost:5432/bwi
+#   cd backend && uv run --extra db python scripts/load_postgis.py --warnings
+services:
+  db:
+    image: postgis/postgis:16-3.4
+    environment:
+      POSTGRES_USER: bwi
+      POSTGRES_PASSWORD: bwi
+      POSTGRES_DB: bwi
+    ports: ["5432:5432"]
+    volumes: ["bwi-pg:/var/lib/postgresql/data"]
+volumes:
+  bwi-pg:

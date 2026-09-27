@@ -1,0 +1,124 @@
+@import "tailwindcss";
+@import "@fontsource-variable/inter";
+
+@theme {
+  --font-sans: "Inter Variable", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --color-ink-950: #070b14;
+  --color-ink-900: #0b1220;
+  --color-ink-800: #111a2e;
+  --color-ink-700: #1a2540;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+  background: #070b14;
+  color: #e2e8f0;
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  overflow: hidden;
+}
+
+.glass {
+  background: rgba(11, 18, 32, 0.78);
+  backdrop-filter: blur(14px) saturate(140%);
+  -webkit-backdrop-filter: blur(14px) saturate(140%);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 10px 30px -12px rgba(0, 0, 0, 0.6);
+}
+
+.panel-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(148, 163, 184, 0.35) transparent;
+}
+
+.card {
+  background: rgba(17, 26, 46, 0.72);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-radius: 16px;
+}
+
+.bwi-marker {
+  width: 18px;
+  height: 18px;
+  border-radius: 9999px;
+  background: #38bdf8;
+  border: 3px solid #fff;
+  box-shadow: 0 0 0 6px rgba(56, 189, 248, 0.35), 0 4px 14px rgba(0, 0, 0, 0.5);
+  animation: bwi-pulse 2.4s ease-out infinite;
+}
+@keyframes bwi-pulse {
+  0% { box-shadow: 0 0 0 0 rgba(56, 189, 248, 0.55), 0 4px 14px rgba(0, 0, 0, 0.5); }
+  70% { box-shadow: 0 0 0 16px rgba(56, 189, 248, 0), 0 4px 14px rgba(0, 0, 0, 0.5); }
+  100% { box-shadow: 0 0 0 0 rgba(56, 189, 248, 0), 0 4px 14px rgba(0, 0, 0, 0.5); }
+}
+
+.bwi-range {
+  -webkit-appearance: none;
+  appearance: none;
+  height: 6px;
+  border-radius: 9999px;
+  background: linear-gradient(90deg, rgba(56, 189, 248, 0.5), rgba(148, 163, 184, 0.25));
+  outline: none;
+}
+.bwi-range::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 16px;
+  height: 16px;
+  border-radius: 9999px;
+  background: #fff;
+  border: 3px solid #0ea5e9;
+  cursor: pointer;
+}
+.bwi-range::-moz-range-thumb {
+  width: 12px;
+  height: 12px;
+  border-radius: 9999px;
+  background: #fff;
+  border: 3px solid #0ea5e9;
+  cursor: pointer;
+}
+
+.maplibregl-ctrl-group {
+  background: rgba(11, 18, 32, 0.82) !important;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+.maplibregl-ctrl-group button .maplibregl-ctrl-icon {
+  filter: invert(1);
+}
+.maplibregl-ctrl-attrib {
+  background: rgba(11, 18, 32, 0.7) !important;
+  color: #94a3b8;
+}
+.maplibregl-ctrl-attrib a {
+  color: #cbd5e1;
+}
+.maplibregl-ctrl-scale {
+  background: rgba(11, 18, 32, 0.6);
+  color: #cbd5e1;
+  border-color: #cbd5e1;
+}
+
+select.bwi-select {
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  padding-right: 28px;
+}
+
+.recharts-cartesian-axis-tick-value {
+  fill: #94a3b8;
+  font-size: 11px;
+}
+
+.bwi-range-sm {
+  height: 4px;
+}
+.bwi-range-sm::-webkit-slider-thumb {
+  width: 12px;
+  height: 12px;
+  border-width: 2px;
+}

@@ -1,0 +1,71 @@
+# SYSTEM-DERIVED crop-weather indicator thresholds.
+# validation_status: UNVALIDATED — thresholds are commonly cited crop-physiology values and
+# MUST be reviewed by a State Agricultural University (for Gujarat: AAU Anand, JAU Junagadh,
+# NAU Navsari, SDAU Dantiwada) before any operational use. They are never shown as advice.
+validation_status: unvalidated
+generic:
+  spray_max_wind_kmh: 15        # common label guidance to limit drift (~10 mph)
+  spray_rain_free_hours: 6
+  harvest_dry_mm: 1.0           # a day counts as dry below this total
+  harvest_max_pop: 30           # and rain probability below this %
+  disease_rh: 85                # leaf-wetness proxy
+  disease_t: [15, 30]
+crops:
+  wheat:
+    label: Wheat
+    season: Rabi
+    stages: [sowing, vegetative, flowering, grain_fill, harvest]
+    heat_tmax: {flowering: 32, grain_fill: 34}
+    cold_tmin: {flowering: 3}
+    note: "Terminal heat after anthesis shortens grain filling (Porter & Gawith 1999 review of wheat temperature responses)."
+  paddy:
+    label: Rice (paddy)
+    season: Kharif
+    stages: [nursery, transplanting, vegetative, flowering, grain_fill, harvest]
+    heat_tmax: {flowering: 35}
+    cold_tmin: {flowering: 15}
+    note: "Temperatures above ~35 °C at anthesis increase spikelet sterility (Jagadish et al. 2007)."
+  cotton:
+    label: Cotton
+    season: Kharif
+    stages: [sowing, vegetative, squaring, flowering, boll_development, harvest]
+    heat_tmax: {flowering: 38, boll_development: 38}
+    cold_tmin: {boll_development: 12}
+    note: "High heat at flowering raises square and boll shedding; validate local thresholds."
+  groundnut:
+    label: Groundnut
+    season: Kharif / Summer
+    stages: [sowing, vegetative, flowering, pegging, pod_fill, harvest]
+    heat_tmax: {flowering: 35, pegging: 35}
+    cold_tmin: {}
+    note: "Heat stress at flowering/pegging reduces pod set."
+  castor:
+    label: Castor
+    season: Kharif
+    stages: [sowing, vegetative, flowering, capsule_development, harvest]
+    heat_tmax: {flowering: 40}
+    cold_tmin: {flowering: 10}
+    note: "Relatively heat tolerant; cold nights slow spike development."
+  bajra:
+    label: Pearl millet (bajra)
+    season: Kharif / Summer
+    stages: [sowing, vegetative, flowering, grain_fill, harvest]
+    heat_tmax: {flowering: 42}
+    cold_tmin: {}
+    note: "Heat tolerant; very high temperature at flowering reduces seed set."
+  cumin:
+    label: Cumin (jeera)
+    season: Rabi
+    stages: [sowing, vegetative, flowering, seed_development, harvest]
+    heat_tmax: {seed_development: 32}
+    cold_tmin: {flowering: 4}
+    disease_sensitive_stages: [flowering, seed_development]
+    note: "Cloudy, humid spells at flowering favour blight (Alternaria) — a major Gujarat concern."
+  mustard:
+    label: Mustard
+    season: Rabi
+    stages: [sowing, vegetative, flowering, pod_fill, harvest]
+    heat_tmax: {pod_fill: 30}
+    cold_tmin: {flowering: 3, pod_fill: 3}
+    disease_sensitive_stages: [flowering, pod_fill]
+    note: "Frost at flowering/pod fill damages pods; cloudy humid weather favours aphids."
