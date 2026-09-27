@@ -12,6 +12,7 @@ Store contract (one file per GFS cycle, data/grids/gfs_<YYYYMMDDHH>.nc):
 """
 from __future__ import annotations
 
+import asyncio
 import logging
 import pathlib
 import time
@@ -105,7 +106,7 @@ class Grid:
         return a
 
 
-_remote = {"checked": 0.0, "etag": None}
+_remote = {"checked": 0.0, "etag": None, "busy": False}
 
 
 async def sync_remote_store() -> None:
@@ -113,12 +114,20 @@ async def sync_remote_store() -> None:
     (settings.grid_store_url). Checked at most every grid_store_refresh_min; ETag avoids
     re-downloading an unchanged file."""
     url = settings.grid_store_url
-    if not url or time.time() - _remote["checked"] < settings.grid_store_refresh_min * 60:
+    if not url:
+        return
+    # A download started by a concurrent request (possibly on another event loop): wait for it
+    # when we have no store yet, instead of answering with the coarse fallback.
+    t0 = time.time()
+    while _remote["busy"] and not any(settings.grid_store_dir.glob("gfs_*.nc")) and time.time() - t0 < 90:
+        await asyncio.sleep(0.5)
+    if time.time() - _remote["checked"] < settings.grid_store_refresh_min * 60:
         return
     async with http.semaphore("grid-sync", 1):
         if time.time() - _remote["checked"] < settings.grid_store_refresh_min * 60:
             return
         _remote["checked"] = time.time()
+        _remote["busy"] = True
         d = settings.grid_store_dir
         d.mkdir(parents=True, exist_ok=True)
         tmp = d / "download.part"
@@ -143,6 +152,8 @@ async def sync_remote_store() -> None:
         except Exception as e:  # noqa: BLE001 — keep serving the old store / fallback
             log.warning("Remote grid store unavailable: %s", e)
             tmp.unlink(missing_ok=True)
+        finally:
+            _remote["busy"] = False
 
 
 async def get_grid(source: str = "gfs") -> Grid:
